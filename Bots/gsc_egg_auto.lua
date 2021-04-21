@@ -83,8 +83,9 @@ function wait_egg()
         	press({right = true}, 10); press({right = false}, 10)
 	end
 	if memory.readbyte(map_offset) == 0x18 then
-		press({left = true}, 10); press({left = false}, 10)
-		press({left = true}, 10); press({left = false}, 10)
+		press({left = false}, 60)
+		press({left = true}, 10); press({left = false}, 60)
+		press({left = true}, 10); press({left = false}, 60)
 	end
     end
     while memory.readbyte(map_offset) ~= 0x18 do
