@@ -1,14 +1,16 @@
 local eggdv_addr
 local atkdef
 local spespc
-local amount = 3
+local amount = 2
 local map_id
 local map_offset
 local daycare_flag
 local party_offset
 local party_size
 local cursor
-
+local box_cursor
+local box_offset
+local box_count
 local version = memory.readbyte(0x141)
 local region = memory.readbyte(0x142)
 if version == 0x54 then
@@ -17,8 +19,10 @@ if version == 0x54 then
         eggdv_addr = 0xdf90
         daycare_flag = 0xdef5
         map_offset = 0xdcb6
-	party_offset = 0xdcd7
-	cursor = 0xcfa9
+		party_offset = 0xdcd7
+		cursor = 0xcfa9
+		box_offset = 0xad10
+		box_cursor = 0xCB2B
     elseif region == 0x45 then
         print("USA Crystal detected")
         eggdv_addr = 0xdf90
@@ -125,12 +129,6 @@ function get_egg()
 end
 
 function take_parent()
-	for i=0,3,1 do
-		press({right = true}, 10); press({right = false}, 10)
-   	end
-	for i=0,3,1 do
-		press({up = true}, 10); press({up = false}, 10)
-   	end
 	while memory.readbyte(daycare_flag) ~= 0x81 do
 		press({A = true}, 10); press({A = false}, 10)
 	end
@@ -141,9 +139,10 @@ function take_parent()
 end
 
 function leave_parent()
-	while memory.readbyte(0x8000) ~= 0 do
-		press({A = true}, 10); press({A = false}, 10)	
+	for i=0,5,1 do
+		press({A = true}, 2); press({A = false}, 100)
    	end
+	
 	while memory.readbyte(cursor) ~= party_size do
 		press({down = true}, 2); press({down = false},2)	
    	end
@@ -156,16 +155,73 @@ function leave_parent()
 		press({A = true}, 5); press({A = false}, 5)
    	end
 end
-	
+
+function drop_egg()
+	for i=0,3,1 do
+		press({right = true}, 10); press({right = false}, 10)
+   	end
+	for i=0,3,1 do
+		press({up = true}, 10); press({up = false}, 10)
+   	end
+	for i=0,2,1 do
+		press({right = true}, 10); press({right = false}, 10)
+   	end
+	for i=0,2,1 do
+		press({up = true}, 10); press({up = false}, 10)
+   	end
+	--standing at PC
+	while memory.readbyte(cursor) ~= 1 do
+		press({A = true}, 10); press({A = false},10)	
+   	end
+	for i=0,5,1 do
+		press({A = true}, 2); press({A = false}, 50)
+   	end
+	while memory.readbyte(cursor) ~= 2 do
+		press({down = true}, 2); press({down = false},2)	
+   	end
+	press({A = true}, 10); press({A = false}, 50)
+	while memory.readbyte(box_cursor) ~= (party_size-1) do
+		press({down = true}, 2); press({down = false},2)	
+   	end
+	for i = 1, 30 do
+		emu.frameadvance()
+	end
+	press({A = true}, 2); press({A = false}, 120)
+	for i = 1, 30 do
+		emu.frameadvance()
+	end
+	press({A = true}, 2); press({A = false}, 50)
+	for i = 1, 240 do
+		emu.frameadvance()
+	end
+	for i=0,3,1 do
+		press({B = true}, 10); press({B = false}, 30)
+   	end
+	for i = 1, 30 do
+		emu.frameadvance()
+	end
+	for i=0,2,1 do
+		press({down = true}, 5); press({down = false}, 10)
+   	end
+	for i=0,2,1 do
+		press({left = true}, 5); press({left = false}, 10)
+   	end
+	press({up = true}, 10); press({up = false}, 10)
+end	
  
 state = savestate.create()
 
 while true do
     savestate.save(state)
-    max_size = 5 - amount
+    max_size = 20 - amount
     party_size = memory.readbyte(party_offset)
-    if party_size > max_size then
+    if party_size > 5 then
 	print("Your team doesn't have enough room!")
+	break
+    end	
+	box_count = memory.readbyte(box_offset)
+	if box_count > max_size then
+		print("Your box doesn't have enough room!")
 	break
     end	
     for i = 1, 105 do
@@ -176,6 +232,7 @@ while true do
     spespc = memory.readbyte(eggdv_addr + 1)
     print(string.format("Atk: %d Def: %d Spe: %d Spc: %d", math.floor(atkdef/16), atkdef%16, math.floor(spespc/16), spespc%16))
     if shiny(atkdef, spespc) then
+	--if 0 == 0 then
             print("Shiny!!!")
 	    for i = 1, 60 do
 		emu.frameadvance()
@@ -184,9 +241,12 @@ while true do
 	    for i = 1, 30 do
 		emu.frameadvance()
 	    end
-            wait_egg()
+        wait_egg()
 	    get_egg()
-	    party_size = party_size + 1
+		party_size = party_size +1
+		drop_egg()
+		party_size = party_size -1
+		box_count = box_count + 1
 	    take_parent()
 	    party_size = party_size + 1
 	    amount = amount - 1
@@ -195,7 +255,7 @@ while true do
 		break
 	    end
 	    leave_parent()
-            party_size = party_size - 1
+        party_size = party_size - 1
 
     else
         print("discard!")
