@@ -1,7 +1,8 @@
+local amount = 2
+
 local eggdv_addr
 local atkdef
 local spespc
-local amount = 2
 local map_id
 local map_offset
 local daycare_flag
@@ -251,8 +252,8 @@ while true do
 	    party_size = party_size + 1
 	    amount = amount - 1
 	    if amount == 0 then
-		savestate.save(state)
-		break
+			savestate.save(state)
+			break
 	    end
 	    leave_parent()
         party_size = party_size - 1
