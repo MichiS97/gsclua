@@ -1,4 +1,4 @@
-local amount = 3
+local amount = 1
 
 local eggdv_addr
 local atkdef
@@ -23,6 +23,7 @@ local menu_option
 local party_screen
 local version = memory.readbyte(0x141)
 local region = memory.readbyte(0x142)
+local running = true
 if version == 0x54 then
     if region == 0x44 or region == 0x46 or region == 0x49 or region == 0x53 then
         print("EUR Crystal detected")
@@ -163,7 +164,7 @@ function get_egg()
 		press({A = true}, 2); press({A = false}, 2)
 	end
     while memory.readbyte(script_running) ~= 0 do
-		emu.frameadvance()
+		press({A = true}, 2); press({A = false}, 2)		--shouldn't be necessary but additional A inputs to decrease likelihood of getting stuck here.
 	end
 	walk_x(17)
 	while memory.readbyte(map_offset) ~= 0x18 do
@@ -206,9 +207,15 @@ function drop_egg()
 	walk_x(11)
 	walk_y(6)
 	--standing at PC
+	if memory.readbyte(box_offset) == 20 then
+		print("Your box is full! Shiny egg is in your party.\nStopping script.")
+		running = false
+		return
+	end
 	while memory.readbyte(cursor) ~= 1 do
 		press({A = true}, 2); press({A = false},2)	
    	end
+	
 	while memory.readbyte(menu_option) ~= 0x80 do
 		press({A = true}, 2); press({A = false}, 2)
    	end
@@ -230,8 +237,13 @@ function drop_egg()
 	end
 	press({A = true}, 2); press({A = false}, 2)
 	press({A = true}, 2); press({A = false}, 2)
+	if memory.readbyte(box_offset) == 20 then
+		print("Your box is full! Shiny egg is in your party.\nStopping script.")
+		running = false
+		return
+	end
 	while memory.readbyte(menu_option) ~= 0x0A do
-		emu.frameadvance()
+		press({B = true}, 2); press({B = false}, 2)
    	end
 	while memory.readbyte(menu_option) ~= 0xD6 do
 		press({B = true}, 2); press({B = false}, 2)
@@ -243,7 +255,7 @@ end
  
 state = savestate.create()
 
-while true do
+while running do
     savestate.save(state)
     max_size = 20 - amount
     party_size = memory.readbyte(party_offset)
@@ -274,6 +286,9 @@ while true do
 	    get_egg()
 		party_size = party_size +1
 		drop_egg()
+		if running ~= true then
+			break
+		end
 		party_size = party_size -1
 	    take_parent()
 	    party_size = party_size + 1
